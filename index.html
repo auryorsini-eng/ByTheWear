@@ -475,6 +475,13 @@
       border-bottom: 0.5px solid var(--border-soft);
     }
 
+    .pin-image-placeholder {
+      width: 100%;
+      height: 110px;
+      background: #daa38f;
+      border-bottom: 0.5px solid var(--border-soft);
+    }
+
     .pin-body {
       padding: 12px 12px 14px;
       display: flex;
@@ -1042,13 +1049,17 @@
 
       const html = items
         .map((item) => {
-          const image = item.thumbnail || "";
+          const image = item.thumbnail || item.image || "";
           const title = item.title || "Risultato";
           const snippet = item.snippet || "";
           const link = item.link || item.redirect_link || "#";
           return `
             <article class="pin">
-              ${image ? `<img src="${image}" alt="${title.replace(/"/g, "&quot;")}">` : ""}
+              ${
+                image
+                  ? `<img src="${image}" alt="${title.replace(/"/g, "&quot;")}">`
+                  : `<div class="pin-image-placeholder" aria-hidden="true"></div>`
+              }
               <div class="pin-body">
                 <a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a>
                 <p>${snippet}</p>
