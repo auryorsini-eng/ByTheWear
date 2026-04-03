@@ -1,58 +1,19 @@
-/**
- * Proxy Groq Chat Completions. Richiede GROQ_API_KEY nelle variabili d'ambiente Vercel.
- */
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-async function readJsonBody(req) {
-  if (Buffer.isBuffer(req.body)) {
-    return JSON.parse(req.body.toString("utf8") || "{}");
-  }
-  if (req.body != null && typeof req.body === "object") {
-    return req.body;
-  }
-  if (typeof req.body === "string") {
-    return JSON.parse(req.body || "{}");
-  }
-  const chunks = [];
-  for await (const chunk of req) {
-    chunks.push(chunk);
-  }
-  const raw = Buffer.concat(chunks).toString("utf8");
-  return JSON.parse(raw || "{}");
-}
+  if (req.method === "OPTIONS") return res.status(200).end();
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "GROQ_API_KEY non configurata sul server" });
-  }
-
-  let payload;
-  try {
-    payload = await readJsonBody(req);
-  } catch {
-    return res.status(400).json({ error: "Body JSON non valido" });
-  }
-
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    return res.status(400).json({ error: "Il body deve essere un oggetto JSON" });
-  }
-
-  const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(req.body)
   });
 
-  const text = await upstream.text();
-  const ct = upstream.headers.get("content-type") || "application/json";
-  res.status(upstream.status).setHeader("Content-Type", ct);
-  return res.send(text);
-};
+  const data = await response.json();
+  return res.status(response.status).json(data);
+}
